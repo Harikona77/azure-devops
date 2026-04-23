@@ -1,7 +1,63 @@
 trigger:
- - main
-pool:
- name: Default
-steps:
-  - script: echo "hello world "
-   
+- main
+
+stages:
+
+# -----------------------------
+# STAGE 1: BUILD
+# -----------------------------
+- stage: Build
+  displayName: "Build Stage"
+  jobs:
+  - job: BuildJob
+    displayName: "Build Application"
+    pool:
+      name: Default   # your self-hosted agent
+    steps:
+    - checkout: self
+
+    - script: |
+        echo "Building application..."
+        mkdir build
+        echo "Hello DevOps" > build/app.txt
+      displayName: "Build Step"
+
+# -----------------------------
+# STAGE 2: TEST
+# -----------------------------
+- stage: Test
+  displayName: "Test Stage"
+  dependsOn: Build   # runs after Build
+  jobs:
+  - job: TestJob
+    displayName: "Run Tests"
+    pool:
+      name: Default
+    steps:
+    - script: |
+        echo "Running tests..."
+        if [ -f build/app.txt ]; then
+          echo "Test Passed"
+        else
+          echo "Test Failed"
+          exit 1
+        fi
+      displayName: "Test Step"
+
+# -----------------------------
+# STAGE 3: DEPLOY
+# -----------------------------
+- stage: Deploy
+  displayName: "Deploy Stage"
+  dependsOn: Test   # runs after Test
+  condition: succeeded()   # only if Test passes
+  jobs:
+  - job: DeployJob
+    displayName: "Deploy Application"
+    pool:
+      name: Default
+    steps:
+    - script: |
+        echo "Deploying application..."
+        echo "Deployment successful"
+      displayName: "Deploy Step"
